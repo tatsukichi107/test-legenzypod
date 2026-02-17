@@ -5,34 +5,37 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="format-detection" content="telephone=no" />
-  <title>【タリスポッド】</title>
+  <title>【TalisPod】</title>
 
   <!-- 既存デザインは app.css 前提 -->
-  <link rel="stylesheet" href="./css/app.css?v=077" />
+  <link rel="stylesheet" href="./css/app.css?v=079" />
 
   <!-- iPhoneの入力ズーム抑制（保険） -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
+
 </head>
 
 <body class="unreborn">
+
   <!-- ===== Header ===== -->
   <header class="header" role="banner">
-    <div class="header-inner">
-      <div class="header-left" style="width:100%;">
-        <div class="header-title">【タリスポッド】</div>
+    <div class="header-inner header-inner--with-action">
+      <div class="header-left">
+        <!-- ★修正：TalisyPod → TalisPod（英語のみ） -->
+        <div class="header-title">【TalisPod】</div>
 
-        <!-- ★変更：カムバックを「サーガ名（1行目）」と同じ行に寄せる -->
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
-          <div class="header-lines" style="min-width:0; flex:1;">
-            <div id="headerLine1" class="line"></div>
-            <div id="headerLine2" class="line"></div>
-            <div id="headerLine3" class="line"></div>
-          </div>
-
-          <div class="header-right" style="flex:0 0 auto;">
-            <button id="comebackBtn" type="button">カムバック</button>
-          </div>
+        <div class="header-lines">
+          <div id="headerLine1" class="line"></div>
+          <div id="headerLine2" class="line"></div>
+          <div id="headerLine3" class="line"></div>
         </div>
+      </div>
+
+      <div class="header-right">
+        <button id="comebackBtn" type="button" class="btn-dual">
+          <span class="jp">カムバック</span>
+          <span class="en">Comeback</span>
+        </button>
       </div>
     </div>
   </header>
@@ -41,26 +44,59 @@
   <main id="startView" class="view active" role="main">
     <div class="container">
       <div class="start-card">
-        <h2>サーガの名を刻め</h2>
+        <h2>
+          <span class="tsp-dual">
+            <span class="jp">サーガの名を刻め</span>
+            <span class="en">Name your saga</span>
+          </span>
+        </h2>
 
         <div class="field">
-          <label for="sagaInput">サーガ名（後から変更できません）</label>
+          <label for="sagaInput">
+            <span class="tsp-inline">
+              <span class="jp">サーガ名</span><span class="sep">/</span><span class="en">Saga Name</span>
+            </span>
+            <span class="small-en">（後から変更できません / Cannot be changed later）</span>
+          </label>
           <input id="sagaInput" type="text" inputmode="text" autocomplete="off" placeholder="" />
         </div>
 
-        <h2>ソウルドールの記憶からリボーン</h2>
+        <h2>
+          <span class="tsp-dual">
+            <span class="jp">ソウルドールの記憶</span>
+            <span class="en">Soul doll memory</span>
+          </span>
+        </h2>
+
         <div class="field">
-          <label for="soulTextInput">ソウルドールの記憶（SOUL:〜）</label>
+          <label for="soulTextInput">
+            <span class="tsp-dual">
+              <span class="jp">ソウルドールの記憶（SOUL1:〜）</span>
+              <span class="en">Memory code (SOUL1:...)</span>
+            </span>
+          </label>
           <textarea id="soulTextInput" placeholder=""></textarea>
         </div>
 
         <div class="start-actions">
-          <button id="textRebornBtn" type="button">記憶からリボーンする</button>
+          <button id="textRebornBtn" type="button" class="btn-dual">
+            <span class="jp">ソウルドールをリボーンする</span>
+            <span class="en">Reborn from Soul doll</span>
+          </button>
         </div>
 
-        <h2 style="margin-top:16px;">新たなソウルドールを見つける</h2>
+        <h2 style="margin-top:16px;">
+          <span class="tsp-dual">
+            <span class="jp">ソウルドールを持っていない</span>
+            <span class="en">No have Soul dolls</span>
+          </span>
+        </h2>
+
         <div class="start-actions">
-          <button id="newSoulBtn" type="button">ソウルドールを見つける</button>
+          <button id="newSoulBtn" type="button" class="btn-dual">
+            <span class="jp">新たなソウルドールを見つける</span>
+            <span class="en">Find a new Soul doll</span>
+          </button>
         </div>
       </div>
     </div>
@@ -71,13 +107,29 @@
     <div class="container">
 
       <!-- ===== HOME ===== -->
-      <section id="tab-home" class="tab-content active">
-        <!-- scene = 環境色が変わる領域 -->
+      <section id="tab-home" class="tab-content active" aria-label="home">
         <div class="scene attr-none">
+
           <div class="home-top home-top--with-action">
             <div class="kv">
-              <div><strong>環境：</strong><span id="envAttributeLabel">無属性</span></div>
-              <div><strong>育成：</strong><span id="growthTimer">環境成長なし</span></div>
+              <div>
+                <strong>
+                  <span class="tsp-inline">
+                    <span class="jp">環境</span><span class="sep">/</span><span class="en">Environment</span>
+                  </span>：
+                </strong>
+                <span id="envAttributeLabel">無属性</span>
+              </div>
+
+              <div>
+                <strong>
+                  <span class="tsp-inline">
+                    <span class="jp">育成</span><span class="sep">/</span><span class="en">Growth</span>
+                  </span>：
+                </strong>
+                <span id="growthTimer">環境成長なし</span>
+              </div>
+
               <div id="growthPreview" class="kv"></div>
             </div>
           </div>
@@ -91,25 +143,37 @@
           </div>
         </div>
 
-        <!-- 無属性ボタン（scene外 直下） -->
+        <!-- 無属性ボタンは scene の外（直下） -->
         <div class="home-bottom-actions">
-          <button id="homeNeutralBtn" type="button" class="ghost">無属性環境にする</button>
+          <button id="homeNeutralBtn" type="button" class="ghost btn-dual">
+            <span class="jp">無属性環境にする</span>
+            <span class="en">Set Neutral</span>
+          </button>
         </div>
       </section>
 
       <!-- ===== ENVIRONMENT ===== -->
-      <section id="tab-environment" class="tab-content">
+      <section id="tab-environment" class="tab-content" aria-label="environment">
         <div class="panel">
-          <h2 style="margin:0 0 10px;">環境</h2>
+          <h2 style="margin:0 0 10px;">
+            <span class="tsp-inline">
+              <span class="jp">環境</span><span class="sep">/</span><span class="en">Environment</span>
+            </span>
+          </h2>
 
           <div class="env-grid">
             <div class="env-top-actions">
-              <button id="neutralBtn" type="button" class="ghost">無属性に戻す</button>
+              <button id="neutralBtn" type="button" class="ghost btn-dual">
+                <span class="jp">無属性に戻す</span>
+                <span class="en">Reset to Neutral</span>
+              </button>
             </div>
 
             <div class="env-row">
               <div class="label">
-                <span>温度</span>
+                <span class="tsp-inline">
+                  <span class="jp">温度</span><span class="sep">/</span><span class="en">Temperature</span>
+                </span>
                 <strong id="tempValue">0℃</strong>
               </div>
               <div class="range-wrap">
@@ -119,7 +183,9 @@
 
             <div class="env-row">
               <div class="label">
-                <span>湿度</span>
+                <span class="tsp-inline">
+                  <span class="jp">湿度</span><span class="sep">/</span><span class="en">Humidity</span>
+                </span>
                 <strong id="humidityValue">50％</strong>
               </div>
               <div class="range-wrap">
@@ -129,9 +195,12 @@
 
             <div class="env-row">
               <div class="label">
-                <span id="lightLabel">光量</span>
+                <span>
+                  <span id="lightLabel">光量</span><span class="small-en"> / Light/Depth</span>
+                </span>
                 <strong id="lightValue">50</strong>
               </div>
+
               <div class="light-buttons" role="group" aria-label="light-buttons">
                 <button id="lightBtn0" type="button" class="light-btn" data-light="0">0</button>
                 <button id="lightBtn50" type="button" class="light-btn active" data-light="50">50</button>
@@ -140,12 +209,18 @@
             </div>
 
             <div class="env-preview">
-              予想環境：<strong id="envPreviewLabel">無属性</strong>
+              <span class="tsp-inline">
+                <span class="jp">予想環境</span><span class="sep">/</span><span class="en">Preview</span>
+              </span>：
+              <strong id="envPreviewLabel">無属性</strong>
             </div>
 
             <div class="env-actions">
               <div class="row">
-                <button id="applyEnvBtn" type="button">環境決定</button>
+                <button id="applyEnvBtn" type="button" class="btn-dual">
+                  <span class="jp">環境決定</span>
+                  <span class="en">Apply</span>
+                </button>
               </div>
             </div>
 
@@ -154,43 +229,85 @@
       </section>
 
       <!-- ===== LEGENDZ ===== -->
-      <section id="tab-legendz" class="tab-content">
+      <section id="tab-legendz" class="tab-content" aria-label="legendz">
         <div class="panel">
-          <h2 style="margin:0 0 10px;">レジェンズ</h2>
+          <h2 style="margin:0 0 10px;">
+            <span class="tsp-inline">
+              <span class="jp">レジェンズ</span><span class="sep">/</span><span class="en">Legendz</span>
+            </span>
+          </h2>
 
           <div class="legendz-head">
             <div class="kvline">
-              <span>種族名</span><strong id="speciesName">-</strong>
+              <span class="tsp-inline">
+                <span class="jp">種族名</span><span class="sep">/</span><span class="en">Species</span>
+              </span>
+              <strong id="speciesName">-</strong>
+
               <span class="sep">　</span>
-              <span>属性</span><strong id="legendzAttribute">-</strong>
+
+              <span class="tsp-inline">
+                <span class="jp">属性</span><span class="sep">/</span><span class="en">Attribute</span>
+              </span>
+              <strong id="legendzAttribute">-</strong>
             </div>
 
             <div class="nick-edit nick-edit--top">
-              <label for="nicknameInput" style="color:var(--muted); font-size:13px;">ニックネーム</label>
+              <label for="nicknameInput" style="color:var(--muted); font-size:13px;">
+                <span class="tsp-inline">
+                  <span class="jp">ニックネーム</span><span class="sep">/</span><span class="en">Nickname</span>
+                </span>
+              </label>
               <input id="nicknameInput" type="text" autocomplete="off" />
-              <button id="nicknameApplyBtn" type="button">ニックネームを変更</button>
+              <button id="nicknameApplyBtn" type="button" class="btn-dual">
+                <span class="jp">ニックネームを変更</span>
+                <span class="en">Update</span>
+              </button>
             </div>
           </div>
 
           <div class="legendz-grid">
-            <div class="kvline"><span>HP</span><strong id="hpStat">-</strong></div>
-            <div class="kvline"><span>マホウ</span><strong id="magicStat">-</strong></div>
-            <div class="kvline"><span>カウンター</span><strong id="counterStat">-</strong></div>
-            <div class="kvline"><span>ダゲキ</span><strong id="strikeStat">-</strong></div>
-            <div class="kvline"><span>カイフク</span><strong id="healStat">-</strong></div>
+            <div class="kvline">
+             <span>HP</span>
+              <strong id="hpStat">-</strong>
+            </div>
+            <div class="kvline">
+              <span class="tsp-inline"><span class="jp">マホウ</span><span class="sep">/</span><span class="en">Magic</span></span>
+              <strong id="magicStat">-</strong>
+            </div>
+            <div class="kvline">
+              <span class="tsp-inline"><span class="jp">カウンター</span><span class="sep">/</span><span class="en">Counter</span></span>
+              <strong id="counterStat">-</strong>
+            </div>
+            <div class="kvline">
+              <span class="tsp-inline"><span class="jp">ダゲキ</span><span class="sep">/</span><span class="en">Strike</span></span>
+              <strong id="strikeStat">-</strong>
+            </div>
+            <div class="kvline">
+              <span class="tsp-inline"><span class="jp">カイフク</span><span class="sep">/</span><span class="en">Heal</span></span>
+              <strong id="healStat">-</strong>
+            </div>
           </div>
 
           <div class="skills">
-            <h3 style="margin:14px 0 8px;">ワザ</h3>
+            <h3 style="margin:14px 0 8px;">
+              <span class="tsp-inline">
+                <span class="jp">ワザ</span><span class="sep">/</span><span class="en">Skills</span>
+              </span>
+            </h3>
             <div id="skillSlots" class="skill-slots" aria-label="skill-slots"></div>
           </div>
         </div>
       </section>
 
       <!-- ===== CRYSTAL ===== -->
-      <section id="tab-crystal" class="tab-content">
+      <section id="tab-crystal" class="tab-content" aria-label="crystal">
         <div class="panel">
-          <h2 style="margin:0 0 10px;">クリスタル</h2>
+          <h2 style="margin:0 0 10px;">
+            <span class="tsp-inline">
+              <span class="jp">クリスタル</span><span class="sep">/</span><span class="en">Crystals</span>
+            </span>
+          </h2>
           <div id="crystalList" class="crystal-box"></div>
         </div>
       </section>
@@ -199,35 +316,37 @@
   </main>
 
   <!-- ===== Tabs ===== -->
-  <!-- ★変更：タブの絵文字アイコンを復活 -->
+  <!-- ルール：タブは英単語のみ（＋絵文字はOK） -->
   <nav class="tabs" aria-label="tabs">
     <button class="tab-btn active" data-tab="home" type="button">
       <div class="ico">🏠</div>
-      <div>ホーム</div>
+      <div>Home</div>
       <div class="dot"></div>
     </button>
     <button class="tab-btn" data-tab="environment" type="button">
       <div class="ico">🌡️</div>
-      <div>環境</div>
+      <div>Env</div>
       <div class="dot"></div>
     </button>
     <button class="tab-btn" data-tab="legendz" type="button">
       <div class="ico">🐉</div>
-      <div>レジェンズ</div>
+      <div>Legendz</div>
       <div class="dot"></div>
     </button>
     <button class="tab-btn" data-tab="crystal" type="button">
       <div class="ico">💎</div>
-      <div>クリスタル</div>
+      <div>Crystal</div>
       <div class="dot"></div>
     </button>
   </nav>
 
   <!-- ===== Scripts ===== -->
-  <script src="./js/state.js?v=077"></script>
-  <script src="./js/areaMap.js?v=077"></script>
-  <script src="./js/areaResolver.js?v=077"></script>
-  <script src="./js/game.js?v=077"></script>
-  <script src="./js/app.js?v=077"></script>
+  <script src="./js/state.js?v=079"></script>
+  <script src="./js/areaMap.js?v=079"></script>
+  <script src="./js/areaResolver.js?v=079"></script>
+  <script src="./js/game.js?v=079"></script>
+  <script src="./js/app.js?v=079"></script>
 </body>
 </html>
+
+

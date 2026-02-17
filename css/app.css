@@ -1,11 +1,16 @@
 /* FILE: css/app.css */
 /* =========================================================
-   TalisPod v0.78.x - app.css
-   既存のデザインは維持しつつ、今回の追加分だけ反映：
-   ★変更：冒険中アニメーション（.adventure-overlay）を
-         「画面中央・最前面・浮いている」表示に変更
+   TalisPod v0.79 - app.css（英語併記UI対応）
+   方針：
+   - 既存デザインは極力維持
+   - 追加：日英併記用の共通クラス（tsp-dual / tsp-inline / btn-dual）
+   - 追加：冒険中オーバーレイを「画面中央・最前面」に（.adventure-overlay）
+   - 既存：環境ランク演出（superbest/best/good/bad）+ 最悪の暗い絵文字落下（tsp-darkfall）
    ========================================================= */
 
+/* =========================
+   Base
+   ========================= */
 :root{
   --bg: #0b0d14;
   --panel: rgba(255,255,255,0.06);
@@ -24,13 +29,15 @@
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
+
 body{
   margin:0;
   font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   color: var(--text);
-  background: radial-gradient(1200px 800px at 50% 0%, rgba(120,160,255,0.12), transparent 60%),
-              radial-gradient(900px 700px at 80% 20%, rgba(255,120,180,0.10), transparent 55%),
-              var(--bg);
+  background:
+    radial-gradient(1200px 800px at 50% 0%, rgba(120,160,255,0.12), transparent 60%),
+    radial-gradient(900px 700px at 80% 20%, rgba(255,120,180,0.10), transparent 55%),
+    var(--bg);
 }
 
 button, input, textarea{
@@ -47,7 +54,60 @@ button, input, textarea{
 .view{ display:none; }
 .view.active{ display:block; }
 
-/* ===== Header ===== */
+/* =========================
+   i18n helpers（英語併記）
+   ========================= */
+.tsp-inline{
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tsp-inline .sep{
+  opacity: 0.55;
+}
+.tsp-dual{
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tsp-dual .jp{
+  font-weight: 700;
+}
+.tsp-dual .en{
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.small-en{
+  display:block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+/* ボタン内2段（日本語/英語） */
+.btn-dual{
+  display:flex;
+  flex-direction: column;
+  align-items:center;
+  justify-content:center;
+  gap: 2px;
+  line-height: 1.1;
+}
+.btn-dual .jp{
+  font-weight: 700;
+}
+.btn-dual .en{
+  font-size: 12px;
+  color: rgba(255,255,255,0.78);
+}
+
+/* =========================
+   Header
+   ========================= */
 .header{
   position: sticky;
   top: 0;
@@ -57,47 +117,56 @@ button, input, textarea{
   background: rgba(10,12,18,0.62);
   border-bottom: 1px solid var(--line);
 }
+
 .header-inner{
   width: min(860px, 94vw);
   margin: 0 auto;
   padding: 10px 0 8px;
 }
 
-/* ヘッダー左右レイアウト */
 .header-inner--with-action{
   display:flex;
   align-items:flex-start;
   justify-content: space-between;
   gap: 10px;
 }
+
 .header-left{ min-width: 0; }
 .header-right{
   display:flex;
   align-items:flex-start;
   justify-content:flex-end;
 }
-.header-right #comebackBtn{
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,0.12);
-  cursor:pointer;
-}
-.header-right #comebackBtn:hover{
-  background: rgba(255,255,255,0.18);
-}
+
 .header-title{
   font-weight: 800;
   letter-spacing: 0.02em;
   margin-bottom: 6px;
 }
+
 .header-lines .line{
   font-size: 12px;
   color: var(--muted);
   line-height: 1.3;
+  word-break: break-word;
 }
 
-/* cards/panels */
+/* comeback */
+#comebackBtn{
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.12);
+  cursor:pointer;
+  white-space:nowrap;
+}
+#comebackBtn:hover{
+  background: rgba(255,255,255,0.18);
+}
+
+/* =========================
+   Cards / Panels
+   ========================= */
 .panel, .start-card{
   background: var(--panel);
   border: 1px solid var(--line);
@@ -110,12 +179,14 @@ button, input, textarea{
   font-size: 15px;
   margin: 10px 0 10px;
 }
+
 .field label{
   display:block;
   font-size: 12px;
   color: var(--muted);
   margin: 4px 0 6px;
 }
+
 .field input, .field textarea{
   width:100%;
   border-radius: 12px;
@@ -124,17 +195,21 @@ button, input, textarea{
   padding: 10px 12px;
   outline: none;
 }
+
 .field textarea{
   min-height: 88px;
   resize: vertical;
 }
+
 .start-actions{
   display:flex;
   gap: 10px;
   margin-top: 10px;
 }
 
-/* buttons */
+/* =========================
+   Buttons
+   ========================= */
 button{
   border: 1px solid var(--line);
   background: var(--btn);
@@ -156,9 +231,9 @@ button.ghost:hover{
   background: rgba(255,255,255,0.06);
 }
 
-/* =========================================================
+/* =========================
    HOME
-   ========================================================= */
+   ========================= */
 .scene{
   background: var(--panel);
   border: 1px solid var(--line);
@@ -166,7 +241,6 @@ button.ghost:hover{
   padding: 14px;
   box-shadow: 0 10px 28px rgba(0,0,0,0.28);
 
-  /* ★演出用：擬似要素とパーティクルを扱うため */
   position: relative;
   overflow: hidden;
 }
@@ -188,7 +262,7 @@ button.ghost:hover{
   opacity: 0;
 }
 
-/* 超ベスト：派手なオーラ＋チカチカ */
+/* 超ベスト：派手 */
 .scene.fx-superbest::before{
   opacity: 1;
   background:
@@ -210,7 +284,7 @@ button.ghost:hover{
   animation: tspSuperShine 1.1s linear infinite;
 }
 
-/* ベスト：ピカピカ控えめ＋降り注ぎを引き立てる */
+/* ベスト：ピカピカ控えめ */
 .scene.fx-best::before{
   opacity: 1;
   background:
@@ -228,7 +302,7 @@ button.ghost:hover{
   animation: tspBestSpark 1.6s ease-in-out infinite;
 }
 
-/* 良好：ほんのり明るい */
+/* 良好：ほんのり */
 .scene.fx-good::before{
   opacity: 1;
   background:
@@ -236,7 +310,7 @@ button.ghost:hover{
   animation: tspGoodBreath 2.2s ease-in-out infinite;
 }
 
-/* 最悪：暗幕＋ビネット＋ズーン脈動 */
+/* 最悪：暗幕＋ビネット */
 .scene.fx-bad::before{
   opacity: 1;
   background:
@@ -249,8 +323,6 @@ button.ghost:hover{
     radial-gradient(520px 320px at 50% 40%, transparent 35%, rgba(0,0,0,0.42) 75%);
   mix-blend-mode: multiply;
 }
-
-/* 追加で雰囲気を落とす */
 .scene.fx-bad{
   filter: saturate(0.72) brightness(0.92);
 }
@@ -281,7 +353,7 @@ button.ghost:hover{
 #spriteViewport{
   position: relative;
   overflow: hidden;
-  border-radius: 0px; /* 長方形 */
+  border-radius: 0px;
   background: rgba(0,0,0,0.10);
   border: 1px solid rgba(255,255,255,0.10);
 }
@@ -313,20 +385,20 @@ button.ghost:hover{
 .scene.attr-earthquake{ background: rgba(90, 255, 140, 0.18); }
 .scene.attr-storm{ background: rgba(80, 170, 255, 0.22); }
 
-/* =========================================================
-   パーティクル（♪✨） 共通
-   ========================================================= */
+/* =========================
+   Particles（♪✨）共通
+   ========================= */
 .tsp-particle{
   position:absolute;
   pointer-events:none;
   user-select:none;
-  z-index: 2; /* scene内の上に */
+  z-index: 2;
   opacity: 0.95;
   will-change: transform, opacity;
   text-shadow: 0 6px 18px rgba(0,0,0,0.35);
 }
 
-/* 超ベスト：舞う/飛ぶ */
+/* 超ベスト：舞う */
 .tsp-fly{
   animation: tspFly var(--tspDur, 1.6s) ease-out forwards;
 }
@@ -339,7 +411,7 @@ button.ghost:hover{
   }
 }
 
-/* ベスト/良好：降る */
+/* ベスト：降る */
 .tsp-fall{
   animation: tspFall var(--tspDur, 1.8s) linear forwards;
 }
@@ -349,7 +421,7 @@ button.ghost:hover{
   100%{ transform: translate3d(var(--tspDX, 0px), var(--tspDY, 180px), 0) scale(var(--tspS,1)); opacity: 0; }
 }
 
-/* 良好：パラパラ用の軽い揺れ */
+/* 良好：パラパラ */
 .tsp-drift{
   animation: tspDrift var(--tspDur, 2.0s) ease-in-out forwards;
 }
@@ -360,7 +432,7 @@ button.ghost:hover{
   100%{ transform: translate3d(-6px, 160px, 0) rotate(12deg) scale(var(--tspS,1)); opacity: 0; }
 }
 
-/* 既存の note-only は残す（互換） */
+/* legacy note-only */
 .fx-note-only{
   position:absolute;
   font-size: 18px;
@@ -373,36 +445,63 @@ button.ghost:hover{
   100%{ transform: translateX(-50%) translateY(0); opacity: 0.8; }
 }
 
-/* =========================================================
+/* 最悪：暗い絵文字（パラパラ落ちる） */
+.tsp-darkfall{
+  position:absolute;
+  pointer-events:none;
+  user-select:none;
+  z-index: 2;
+  animation: tspDarkFall var(--tspDur, 2s) linear forwards;
+  opacity: 0.9;
+  filter: brightness(0.6) saturate(0.7);
+  text-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+@keyframes tspDarkFall{
+  0%{ transform: translate3d(0,-10px,0) rotate(0deg); opacity: 0; }
+  10%{ opacity: 0.9; }
+  100%{
+    transform: translate3d(var(--tspDX,0px), var(--tspDY,220px), 0) rotate(12deg);
+    opacity: 0;
+  }
+}
+
+/* =========================
    ENVIRONMENT
-   ========================================================= */
+   ========================= */
 .env-grid{
   display:flex;
   flex-direction: column;
   gap: 12px;
 }
+
 .env-top-actions{
   display:flex;
   justify-content:center;
 }
+
 .env-row{
   display:flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .env-row .label{
   display:flex;
   justify-content: space-between;
   align-items: baseline;
   color: var(--muted);
+  gap: 10px;
 }
 .env-row .label strong{
   color: var(--text);
+  white-space: nowrap;
 }
+
 .range-wrap{
   display:flex;
   justify-content:center;
 }
+
 .range-wrap input[type="range"]{
   width: min(520px, 92%);
   accent-color: rgba(255,255,255,0.75);
@@ -443,57 +542,41 @@ button.ghost:hover{
   width: min(420px, 92%);
 }
 
-/* =========================================================
-   ★冒険中アニメーション（中央・最前面・浮遊）
-   置き換え：以前は「タブ内の下」に出す想定だったが、
-             ここでは画面中央モーダル風にする
-   ========================================================= */
+/* 冒険中：画面中央・最前面（下表示ではなく） */
 .adventure-overlay{
-  position: fixed;              /* 画面基準 */
-  inset: 0;                     /* 全面 */
-  z-index: 200;                 /* 最前面 */
-  display: none;                /* JSで表示する時に flex にする */
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
 
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(2px);
-
-  margin: 0;                    /* 旧margin対策 */
-  text-align: center;
-}
-
-/* JS側で box を作る想定。無い場合でも見栄えが崩れにくい */
-.adventure-overlay__box{
   padding: 14px 18px;
+  text-align:center;
   border-radius: 16px;
+  background: rgba(0,0,0,0.62);
   border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(15,18,28,0.92);
-  box-shadow: 0 18px 36px rgba(0,0,0,0.40);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.48);
 
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  letter-spacing: 0.02em;
-
-  transform: translateY(-2px);
+  min-width: min(320px, 86vw);
 }
 
-/* =========================================================
+/* =========================
    LEGENDZ
-   ========================================================= */
+   ========================= */
 .legendz-head{
   display:flex;
   flex-direction: column;
   gap: 10px;
   margin-bottom: 10px;
 }
+
 .kvline{
   display:flex;
   align-items: baseline;
   gap: 8px;
   color: var(--muted);
+  flex-wrap: wrap;
 }
 .kvline strong{
   color: var(--text);
@@ -501,11 +584,13 @@ button.ghost:hover{
 .kvline .sep{
   opacity: 0.5;
 }
+
 .nick-edit{
   display:flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .nick-edit input{
   width: 100%;
   border-radius: 12px;
@@ -517,6 +602,7 @@ button.ghost:hover{
 .nick-edit button{
   width: 100%;
 }
+
 .legendz-grid{
   display:grid;
   grid-template-columns: 1fr;
@@ -557,9 +643,9 @@ button.ghost:hover{
   white-space: nowrap;
 }
 
-/* =========================================================
+/* =========================
    CRYSTAL
-   ========================================================= */
+   ========================= */
 .crystal-box{
   display:flex;
   flex-direction: column;
@@ -567,9 +653,9 @@ button.ghost:hover{
   color: var(--muted);
 }
 
-/* =========================================================
+/* =========================
    TABS
-   ========================================================= */
+   ========================= */
 .tabs{
   position: fixed;
   left: 0;
@@ -595,7 +681,10 @@ button.ghost:hover{
   border-radius: 16px;
   background: rgba(255,255,255,0.08);
 }
-.tab-btn .ico{ font-size: 18px; }
+.tab-btn .ico{
+  font-size: 18px;
+  line-height: 1;
+}
 .tab-btn .dot{
   width: 6px; height: 6px;
   border-radius: 999px;
@@ -611,13 +700,13 @@ button.ghost:hover{
 .tab-content{ display:none; }
 .tab-content.active{ display:block; }
 
-/* =========================================================
+/* =========================
    MODAL
-   ========================================================= */
+   ========================= */
 .modal-backdrop{
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 180;
   background: rgba(0,0,0,0.55);
   display: none;
   align-items: center;
@@ -625,6 +714,7 @@ button.ghost:hover{
   padding: 16px;
 }
 .modal-backdrop.active{ display:flex; }
+
 .modal{
   width: min(560px, 96vw);
   background: rgba(15,18,28,0.92);
@@ -652,9 +742,9 @@ button.ghost:hover{
   margin-top: 10px;
 }
 
-/* =========================================================
+/* =========================
    未リボーン時の非表示制御（body.unreborn）
-   ========================================================= */
+   ========================= */
 body.unreborn .tabs{
   display: none !important;
 }
@@ -662,9 +752,9 @@ body.unreborn #comebackBtn{
   display: none !important;
 }
 
-/* =========================================================
+/* =========================
    Animations (bg)
-   ========================================================= */
+   ========================= */
 @keyframes tspSuperPulse{
   0%{ filter: brightness(1.00) saturate(1.00); }
   50%{ filter: brightness(1.14) saturate(1.10); }
@@ -696,7 +786,9 @@ body.unreborn #comebackBtn{
   100%{ opacity: 0.92; }
 }
 
-/* small screens tweaks */
+/* =========================
+   Responsive
+   ========================= */
 @media (min-width: 700px){
   .legendz-grid{ grid-template-columns: 1fr 1fr; }
   .skill-slots{ grid-template-columns: 1fr 1fr; }

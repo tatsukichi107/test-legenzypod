@@ -1,15 +1,29 @@
 // FILE: js/app.js
 /* =========================================================
- * js/app.js  v0.78.1 (UI tweak)
+ * TalisPod v0.79 (EN append tweaks)
  *
- * 変更点（IDは変更しない）
- * 1) ヘッダーの「種族名」と「ニックネーム」を2行に分ける
- * 2) 「冒険中…」表示を 画面中央・最前面（モーダル風）にする
+ * 反映（今回ぶん）
+ * - ヘッダー
+ *   - Line1: SagaName: ○○（英語のみ）
+ *   - Line2: 種族名/Species：○○/△△（日本語/英語）
+ *   - Line3: Nickname: ○○（英語のみ）
+ * - Home
+ *   - 無属性時：育成/Growth：環境成長なし/No Growth（2段）
+ *   - 環境表示：日本語エリア名/英語エリア名（Good等は英語で括弧）
+ * - Env
+ *   - 光量/Light と 水深/Depth を切替（ラベル側）
+ *   - 予想環境(Preview)の値：英語属性名のみ（例 Tornado）
+ *   - 冒険中表示：冒険中.../Adventuring（英語は...無し・2段）
+ * - Legendz
+ *   - 種族名：○○/△△
+ *   - 属性：英語のみ
+ * - Comeback modal
+ *   - 文言を指定どおりに差し替え
  *
  * 依存：
- * - window.TSP_STATE（state.js）
- * - window.TSP_GAME（game.js）
- * - window.TSP_AREAMAP / window.TSP_AREA（areaMap/areaResolver）
+ * - window.TSP_STATE
+ * - window.TSP_GAME
+ * - window.TSP_AREAMAP / window.TSP_AREA
  * ========================================================= */
 
 (function () {
@@ -80,7 +94,7 @@
     modal.className = "modal-backdrop";
     modal.innerHTML = `
       <div class="modal">
-        <div id="nzTitle" class="modal-title">お知らせ</div>
+        <div id="nzTitle" class="modal-title">Notice</div>
         <div id="nzBody" style="color:var(--muted); font-size:13px; line-height:1.55; white-space:pre-wrap;"></div>
         <div class="modal-actions" style="margin-top:12px;">
           <button id="nzOkBtn">OK</button>
@@ -101,7 +115,7 @@
 
   function openNotice(title, body) {
     const m = ensureNoticeModal();
-    $("nzTitle").textContent = String(title ?? "お知らせ");
+    $("nzTitle").textContent = String(title ?? "Notice");
     $("nzBody").textContent = String(body ?? "");
     m.classList.add("active");
   }
@@ -114,7 +128,7 @@
   function showError(where, e) {
     const msg = (e && (e.message || String(e))) || "unknown";
     console.error(where, e);
-    openNotice("エラー", `（${where}）\n${msg}`);
+    openNotice("Error", `(${where})\n${msg}`);
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -153,6 +167,7 @@
     superAcc: 0,
     bestAcc: 0,
     goodAcc: 0,
+    badAcc: 0
   };
 
   // ===== DOM refs =====
@@ -199,9 +214,53 @@
   // ===== Skills event guard =====
   let skillsClickBound = false;
 
-  // ★FX state tracking
-  let lastRankKey = null;   // e.g. "neutral" / "superbest" etc.
-  let lastEnvAttr = null;   // "volcano" etc.
+  // FX state tracking
+  let lastRankKey = null;
+
+  // ===== EN maps (今の実装エリア名に合わせて) =====
+  const AREA_EN_MAP = Object.freeze({
+    V1: "volcano",
+    V2: "desert",
+    V3: "arid zone",
+    V4: "broadleaf forest",
+
+    T1: "stratosphere",
+    T2: "mountain region",
+    T3: "plateau",
+    T4: "conifer forest",
+
+    E1: "underground",
+    E2: "tropical rainforest",
+    E3: "tropics",
+    E4: "temperate grassland",
+
+    S1: "absolute zero",
+    S2: "polar region",
+    S3: "subarctic",
+    S4: "cold steppe",
+
+    SS_SHALLOW: "south sea (shallow)",
+    SS_MID: "south sea (mid)",
+    SS_DEEP: "south sea (deep)",
+
+    SN_SHALLOW: "north sea (shallow)",
+    SN_MID: "north sea (mid)",
+    SN_DEEP: "north sea (deep)",
+  });
+
+  const SPECIES_EN_MAP = Object.freeze({
+    windragon: "Windragon",
+  });
+
+  function getAreaEnName(areaId) {
+    if (!areaId || areaId === "NEUTRAL") return null;
+    return AREA_EN_MAP[areaId] || null;
+  }
+
+  function getSpeciesEnName(s) {
+    const id = safeText(s && s.speciesId);
+    return SPECIES_EN_MAP[id] || "";
+  }
 
   function lockUI(on) {
     uiLocked = on;
@@ -237,37 +296,51 @@
   // ===== Header =====
   function displayNickname(s) {
     const n = safeText(s && s.nickname);
-    return n ? n : "未登録";
+    return n ? n : "Unregistered";
   }
 
-  // ★変更：種族名とニックネームを2行に分ける
   function setHeader() {
     if (!soul) {
       headerLine1.textContent = "";
       headerLine2.textContent = "";
-      headerLine3.textContent = "未リボーン";
+      headerLine3.textContent = "Not reborn";
       return;
     }
 
     const saga = safeText(soul.sagaName);
-    const sp = safeText(soul.speciesName);
+    const spJp = safeText(soul.speciesName);
+    const spEn = safeText(getSpeciesEnName(soul));
     const nick = displayNickname(soul);
 
-    headerLine1.textContent = `サーガ名：${saga}`;
-    headerLine2.textContent = `種族名：${sp}`;
-    headerLine3.textContent = `ニックネーム：${nick}`;
+    headerLine1.textContent = `SagaName: ${saga}`;
+    headerLine2.textContent = `種族名/Species：${spJp}${spEn ? "/" + spEn : ""}`;
+    headerLine3.textContent = `Nickname: ${nick}`;
   }
 
-  function attrJp(attr) {
+  function rankEn(rank) {
+    const R = window.TSP_GAME.Rank;
+    switch (rank) {
+      case R.superbest: return "SuperBest";
+      case R.best: return "Best";
+      case R.good: return "Good";
+      case R.normal: return "Normal";
+      case R.bad: return "Bad";
+      default: return "Neutral";
+    }
+  }
+
+  function attrEnFromGame(envAttr) {
     const meta = window.TSP_GAME && window.TSP_GAME.ATTR_META;
-    if (attr === "neutral") return "無属性";
-    return (meta && meta[attr] && meta[attr].jp) ? meta[attr].jp : String(attr || "");
+    if (!meta) return "";
+    const m = meta[envAttr] || meta.neutral;
+    return safeText(m && m.en);
   }
 
+  // ===== Home background (existing) =====
   function setHomeBackgroundByEnvAttr(envAttr) {
     if (!scene) return;
     scene.classList.remove("attr-none", "attr-volcano", "attr-tornado", "attr-earthquake", "attr-storm");
-    switch (envAttr) {
+    switch (String(envAttr || "")) {
       case "volcano": scene.classList.add("attr-volcano"); break;
       case "tornado": scene.classList.add("attr-tornado"); break;
       case "earthquake": scene.classList.add("attr-earthquake"); break;
@@ -276,25 +349,19 @@
     }
   }
 
-  function rankLabel(rank) {
-    const R = window.TSP_GAME.Rank;
-    switch (rank) {
-      case R.superbest: return "超ベスト環境";
-      case R.best: return "ベスト環境";
-      case R.good: return "良好環境";
-      case R.normal: return "普通環境";
-      case R.bad: return "最悪環境";
-      default: return "無属性環境";
-    }
-  }
-
   // ===== Stats UI =====
   function refreshStatsUI() {
     if (!soul) return;
 
-    speciesName.textContent = soul.speciesName;
+    // Species: JP/EN
+    const spJp = safeText(soul.speciesName);
+    const spEn = safeText(getSpeciesEnName(soul));
+    speciesName.textContent = spEn ? `${spJp}/${spEn}` : spJp;
+
+    // Attribute: EN only
+    legendzAttribute.textContent = String(soul.attribute ? attrEnFromGame(soul.attribute) : "");
+
     nicknameInput.value = soul.nickname || "";
-    legendzAttribute.textContent = attrJp(soul.attribute);
 
     const mx = window.TSP_GAME.maxHP(soul);
     hpStat.textContent = `${soul.currentHP}/${mx}`;
@@ -309,18 +376,18 @@
     if (!soul) return;
     const c = soul.crystals || {};
     crystalList.innerHTML = `
-      <div>ヴォルケーノ：${c.volcano || 0}</div>
-      <div>トルネード：${c.tornado || 0}</div>
-      <div>アースクエイク：${c.earthquake || 0}</div>
-      <div>ストーム：${c.storm || 0}</div>
+      <div>Volcano：${c.volcano || 0}</div>
+      <div>Tornado：${c.tornado || 0}</div>
+      <div>Earthquake：${c.earthquake || 0}</div>
+      <div>Storm：${c.storm || 0}</div>
     `;
   }
 
   // ===== Skills (dummy) =====
   const DUMMY_SKILLS = Array.from({ length: 15 }, (_, i) => ({
     id: `skill_${i + 1}`,
-    name: `ワザ${String(i + 1).padStart(2, "0")}`,
-    meta: (i % 3 === 0) ? "攻撃" : (i % 3 === 1 ? "補助" : "回復"),
+    name: `Skill ${String(i + 1).padStart(2, "0")}`,
+    meta: (i % 3 === 0) ? "Attack" : (i % 3 === 1 ? "Support" : "Recover"),
   }));
 
   function renderSkillsUI() {
@@ -334,7 +401,7 @@
           <div class="name">${sk.name}</div>
           <div class="meta">${sk.meta} / Slot ${idx + 1}</div>
         </div>
-        <button type="button" class="try-btn" data-skill="${sk.id}">試し撃ち</button>
+        <button type="button" class="try-btn" data-skill="${sk.id}">Try</button>
       `;
       skillSlots.appendChild(row);
     });
@@ -352,7 +419,7 @@
       const sk = DUMMY_SKILLS.find(s => s.id === id);
       if (!sk) return;
 
-      openNotice("試し撃ち", `${sk.name} を試し撃ち！`);
+      openNotice("Try", `${sk.name}`);
     });
   }
 
@@ -392,7 +459,13 @@
   }
 
   function updateLightLabelByHumidity() {
-    lightLabel.textContent = (Number(envDraft.hum) === 100) ? "水深" : "光量";
+    const isSea = (Number(envDraft.hum) === 100);
+    lightLabel.textContent = isSea ? "水深" : "光量";
+
+    // HTML側の small-en を切替（存在すれば）
+    const wrap = lightLabel && lightLabel.parentElement;
+    const small = wrap ? wrap.querySelector(".small-en") : null;
+    if (small) small.textContent = isSea ? " / Depth" : " / Light";
   }
 
   function refreshEnvUI() {
@@ -400,73 +473,48 @@
     humidityValue.textContent = `${envDraft.hum}％`;
     updateLightLabelByHumidity();
 
-    // 予想環境は属性のみ（既存方針）
+    // Preview：英語属性のみ（Neutralなら Neutral）
     const attr = window.TSP_GAME.envAttribute(envDraft.temp, envDraft.hum, envDraft.light);
-    envPreviewLabel.textContent = (attr === "neutral") ? "無属性" : attrJp(attr);
+    envPreviewLabel.textContent = (attr === "neutral") ? "Neutral" : attrEnFromGame(attr);
   }
 
-  // =========================================================
-  // 冒険中オーバーレイ（中央・最前面）
-  // =========================================================
-  let adventureOverlayEl = null;
-
+  // ===== Adventure apply (center overlay) =====
   function ensureAdventureOverlay() {
-    if (adventureOverlayEl) return adventureOverlayEl;
+    let el = $("tspAdventureOverlay");
+    if (el) return el;
 
-    const wrap = document.createElement("div");
-    // CSSで .adventure-overlay を fixed 中央にする想定だが、
-    // CSSが未反映でも動くように最低限のinlineを入れる
-    wrap.className = "adventure-overlay";
-    wrap.setAttribute("aria-live", "polite");
-    wrap.style.position = "fixed";
-    wrap.style.inset = "0";
-    wrap.style.zIndex = "200";
-    wrap.style.display = "none";
-    wrap.style.alignItems = "center";
-    wrap.style.justifyContent = "center";
-    wrap.style.background = "rgba(0,0,0,0.55)";
-    wrap.style.backdropFilter = "blur(2px)";
-    wrap.style.padding = "16px";
-
-    const box = document.createElement("div");
-    box.className = "adventure-overlay__box";
-    box.textContent = "冒険中…";
-    box.style.padding = "14px 18px";
-    box.style.borderRadius = "16px";
-    box.style.border = "1px solid rgba(255,255,255,0.16)";
-    box.style.background = "rgba(15,18,28,0.92)";
-    box.style.boxShadow = "0 18px 36px rgba(0,0,0,0.40)";
-    box.style.fontSize = "14px";
-
-    wrap.appendChild(box);
-    document.body.appendChild(wrap);
-
-    adventureOverlayEl = wrap;
-    return adventureOverlayEl;
+    el = document.createElement("div");
+    el.id = "tspAdventureOverlay";
+    el.style.position = "fixed";
+    el.style.left = "50%";
+    el.style.top = "50%";
+    el.style.transform = "translate(-50%,-50%)";
+    el.style.zIndex = "200";
+    el.style.padding = "14px 16px";
+    el.style.borderRadius = "16px";
+    el.style.border = "1px solid rgba(255,255,255,0.14)";
+    el.style.background = "rgba(15,18,28,0.92)";
+    el.style.backdropFilter = "blur(10px)";
+    el.style.boxShadow = "0 18px 34px rgba(0,0,0,0.45)";
+    el.style.display = "none";
+    el.style.textAlign = "center";
+    el.style.whiteSpace = "pre";
+    document.body.appendChild(el);
+    return el;
   }
 
-  function showAdventureOverlay(text = "冒険中…") {
-    const ov = ensureAdventureOverlay();
-    const box = ov.querySelector(".adventure-overlay__box");
-    if (box) box.textContent = String(text ?? "冒険中…");
-    ov.style.display = "flex";
-  }
-
-  function hideAdventureOverlay() {
-    if (!adventureOverlayEl) return;
-    adventureOverlayEl.style.display = "none";
-  }
-
-  // ===== Adventure apply =====
   async function playAdventureAndApply() {
     if (uiLocked) return;
 
     lockUI(true);
 
-    // ★変更：下に出すのではなく中央最前面に出す
-    showAdventureOverlay("冒険中…");
+    const overlay = ensureAdventureOverlay();
+    overlay.textContent = "冒険中...\nAdventuring";
+    overlay.style.display = "block";
+
     await sleep(3000);
-    hideAdventureOverlay();
+
+    overlay.style.display = "none";
 
     envApplied = { ...envDraft };
     secondsAccum = 0;
@@ -511,25 +559,13 @@
 
   function removeParticles() {
     if (!scene) return;
-    qsa(".tsp-particle").forEach(p => p.remove());
+    qsa(".tsp-particle, .tsp-darkfall").forEach(p => p.remove());
   }
 
   function clearFxAllHard() {
     spriteFxLayer.innerHTML = "";
     clearSceneFxClasses();
     removeParticles();
-  }
-
-  // legacy note-only
-  function setNoteFxLegacy() {
-    spriteFxLayer.innerHTML = "";
-    const n = document.createElement("div");
-    n.className = "fx-note-only";
-    n.textContent = "♪";
-    n.style.left = "50%";
-    n.style.bottom = "-6px";
-    n.style.transform = "translateX(-50%)";
-    spriteFxLayer.appendChild(n);
   }
 
   function rand(min, max) {
@@ -540,20 +576,29 @@
     if (!scene) return;
 
     const p = document.createElement("div");
-    p.className = `tsp-particle ${cls}`;
+    p.className = cls;
     p.textContent = text;
     p.style.left = `${xPct}%`;
     p.style.top = `${yPct}%`;
-    p.style.setProperty("--tspDur", `${dur}s`);
-    p.style.setProperty("--tspDX", `${dx}px`);
-    p.style.setProperty("--tspDY", `${dy}px`);
-    p.style.setProperty("--tspR", `${rot}deg`);
-    p.style.setProperty("--tspS", `${scale}`);
-    p.style.fontSize = `${sizePx}px`;
+
+    if (cls.indexOf("tsp-particle") >= 0) {
+      p.style.setProperty("--tspDur", `${dur}s`);
+      p.style.setProperty("--tspDX", `${dx}px`);
+      p.style.setProperty("--tspDY", `${dy}px`);
+      p.style.setProperty("--tspR", `${rot}deg`);
+      p.style.setProperty("--tspS", `${scale}`);
+      p.style.fontSize = `${sizePx}px`;
+    } else {
+      // darkfall
+      p.style.setProperty("--tspDur", `${dur}s`);
+      p.style.setProperty("--tspDX", `${dx}px`);
+      p.style.setProperty("--tspDY", `${dy}px`);
+      p.style.fontSize = `${sizePx}px`;
+    }
 
     scene.appendChild(p);
 
-    const rmMs = Math.max(900, dur * 1000 + 220);
+    const rmMs = Math.max(900, dur * 1000 + 240);
     setTimeout(() => { try { p.remove(); } catch {} }, rmMs);
   }
 
@@ -566,8 +611,8 @@
     const interval = 0.06;
     while (FX.superAcc >= interval) {
       FX.superAcc -= interval;
-
       const count = 6;
+
       for (let i = 0; i < count; i++) {
         const isSpark = Math.random() > 0.52;
         const text = isSpark ? "✨" : "♪";
@@ -582,7 +627,11 @@
         const scale = rand(0.9, 1.35);
         const sizePx = isSpark ? rand(16, 24) : rand(14, 22);
 
-        spawnParticle({ text, xPct, yPct, cls: "tsp-fly", dur, dx, dy, rot, scale, sizePx });
+        spawnParticle({
+          text, xPct, yPct,
+          cls: "tsp-particle tsp-fly",
+          dur, dx, dy, rot, scale, sizePx
+        });
       }
     }
   }
@@ -596,8 +645,8 @@
     const interval = 0.12;
     while (FX.bestAcc >= interval) {
       FX.bestAcc -= interval;
-
       const count = 4;
+
       for (let i = 0; i < count; i++) {
         const isSpark = Math.random() > 0.86;
         const text = isSpark ? "✨" : "♪";
@@ -611,7 +660,11 @@
         const scale = rand(0.9, 1.2);
         const sizePx = isSpark ? rand(16, 22) : rand(14, 20);
 
-        spawnParticle({ text, xPct, yPct, cls: "tsp-fall", dur, dx, dy, rot, scale, sizePx });
+        spawnParticle({
+          text, xPct, yPct,
+          cls: "tsp-particle tsp-fall",
+          dur, dx, dy, rot, scale, sizePx
+        });
       }
     }
   }
@@ -625,8 +678,8 @@
     const interval = 0.45;
     while (FX.goodAcc >= interval) {
       FX.goodAcc -= interval;
-
       const count = 1 + (Math.random() > 0.7 ? 1 : 0);
+
       for (let i = 0; i < count; i++) {
         const text = "♪";
         const xPct = rand(8, 92);
@@ -638,15 +691,42 @@
         const scale = rand(0.9, 1.15);
         const sizePx = rand(13, 18);
 
-        spawnParticle({ text, xPct, yPct, cls: "tsp-drift", dur, dx, dy, rot, scale, sizePx });
+        spawnParticle({
+          text, xPct, yPct,
+          cls: "tsp-particle tsp-drift",
+          dur, dx, dy, rot, scale, sizePx
+        });
       }
     }
   }
 
-  // 最悪：暗い雰囲気（CSSに任せる）
-  function applyBadFx() {
+  // 最悪：暗い絵文字をパラパラ（良好と同じノリで）
+  function emitBadDarkfall(dtSec) {
     if (!scene) return;
     scene.classList.add("fx-bad");
+
+    FX.badAcc += dtSec;
+    const interval = 0.38;
+    while (FX.badAcc >= interval) {
+      FX.badAcc -= interval;
+
+      const texts = ["🌑", "☁️", "🕳️"];
+      const text = texts[Math.floor(Math.random() * texts.length)];
+
+      const xPct = rand(6, 94);
+      const yPct = rand(-10, 6);
+      const dur = rand(1.8, 2.6);
+      const dx = rand(-16, 16);
+      const dy = rand(180, 260);
+      const sizePx = rand(14, 20);
+
+      spawnParticle({
+        text, xPct, yPct,
+        cls: "tsp-darkfall",
+        dur, dx, dy,
+        rot: 0, scale: 1, sizePx
+      });
+    }
   }
 
   function centerSprite() {
@@ -705,16 +785,16 @@
   }
 
   function makeRankKey(info) {
-    return `${String(info.rank)}|${String(info.envAttr)}`;
+    return `${String(info.rank)}|${String(info.envAttr)}|${String(info.areaId)}`;
   }
 
-  function onRankChanged(newKey, info) {
+  function onRankChanged(newKey) {
     clearFxAllHard();
     FX.superAcc = 0;
     FX.bestAcc = 0;
     FX.goodAcc = 0;
+    FX.badAcc = 0;
     lastRankKey = newKey;
-    lastEnvAttr = info.envAttr;
   }
 
   function renderByCurrentEnv(dtSec) {
@@ -724,20 +804,22 @@
     const info = window.TSP_GAME.computeRank(MONSTER, envApplied, now, soul.attribute);
     const R = window.TSP_GAME.Rank;
 
-    // ★ホームは「エリア名優先」＋（ランク）
+    // Home: 環境表示＝日本語エリア名/英語エリア名（英語相性）
     if (info.rank === R.neutral) {
       envAttributeLabel.textContent = "無属性";
     } else {
-      const name = safeText(info.areaName) || attrJp(info.envAttr);
-      envAttributeLabel.textContent = `${name}（${rankLabel(info.rank)}）`;
+      const jp = safeText(info.areaName || "");
+      const en = safeText(info.areaEnName || getAreaEnName(info.areaId) || "");
+      const rel = rankEn(info.rank);
+      if (jp && en) envAttributeLabel.textContent = `${jp}/${en}（${rel}）`;
+      else if (jp) envAttributeLabel.textContent = `${jp}（${rel}）`;
+      else envAttributeLabel.textContent = `${rel}`;
     }
 
     setHomeBackgroundByEnvAttr(info.envAttr);
 
     const key = makeRankKey(info);
-    if (key !== lastRankKey) {
-      onRankChanged(key, info);
-    }
+    if (key !== lastRankKey) onRankChanged(key);
 
     updateHomeNeutralButtonVisibility(info);
 
@@ -745,14 +827,14 @@
     switch (info.rank) {
       case R.superbest:
         setFacing("left");
-        renderFrame(7); // 喜び
+        renderFrame(7);
         emitSuperbest(dtSec);
         centerSprite();
         break;
 
       case R.best:
         setFacing("left");
-        renderFrame(7); // 喜び
+        renderFrame(7);
         emitBest(dtSec);
         centerSprite();
         break;
@@ -760,7 +842,7 @@
       case R.good:
         tickIdle(dtSec);
         setFacing("left");
-        renderFrame(IDLE.frame); // 通常1/2
+        renderFrame(IDLE.frame);
         emitGood(dtSec);
         centerSprite();
         break;
@@ -768,14 +850,14 @@
       case R.normal:
         tickIdle(dtSec);
         setFacing("left");
-        renderFrame(IDLE.frame); // 通常1/2
+        renderFrame(IDLE.frame);
         centerSprite();
         break;
 
       case R.bad:
         setFacing("left");
-        renderFrame(8); // ダウン
-        applyBadFx();
+        renderFrame(8);
+        emitBadDarkfall(dtSec);
         centerSprite();
         break;
 
@@ -786,7 +868,12 @@
     }
   }
 
-  // ===== Growth preview =====
+  // ===== Growth preview / timer =====
+  function setGrowthTimerNeutral() {
+    // 「環境成長なし/No Growth」2段
+    growthTimer.textContent = "環境成長なし/No Growth";
+  }
+
   function updateGrowthPreviewAndTimer() {
     if (!soul) return;
 
@@ -794,7 +881,7 @@
     const info = window.TSP_GAME.computeMinutePreview(soul, MONSTER, envApplied, now, elemCounter);
 
     if (info.rank === window.TSP_GAME.Rank.neutral) {
-      growthTimer.textContent = "環境成長なし";
+      setGrowthTimerNeutral();
       growthPreview.textContent = "";
       return;
     }
@@ -805,13 +892,13 @@
     growthTimer.textContent = `${mm}:${ss}`;
 
     const parts = [];
-    if (info.heal > 0) parts.push(`回復+${info.heal}`);
+    if (info.heal > 0) parts.push(`Recover+${info.heal}`);
     if (info.hpDmg > 0) parts.push(`HP-${info.hpDmg}`);
     parts.push(`HP+${info.hpGrow}`);
 
     if (info.elemKey) {
-      const jp = { fire: "マホウ", wind: "カウンター", earth: "ダゲキ", water: "カイフク" }[info.elemKey];
-      parts.push(`${jp}+${info.elemGrow}`);
+      const en = { fire: "Magic", wind: "Counter", earth: "Attack", water: "Recover" }[info.elemKey];
+      parts.push(`${en}+${info.elemGrow}`);
     }
 
     growthPreview.textContent = parts.join(" / ");
@@ -827,12 +914,12 @@
     modal.className = "modal-backdrop";
     modal.innerHTML = `
       <div class="modal">
-        <div class="modal-title">ソウルドールの記憶</div>
+        <div class="modal-title">ソウルドールの記憶/Soul doll Memory</div>
         <textarea id="cbCodeArea" class="modal-code" readonly></textarea>
         <div class="modal-actions">
-          <button id="cbCopyBtn">ソウルドールの記憶の保存(コピー)</button>
-          <button id="cbRebornBtn">カムバックする</button>
-          <button id="cbCloseBtn">育成に戻る</button>
+          <button id="cbCopyBtn">コピー（Copy）</button>
+          <button id="cbRebornBtn">カムバック（Comeback）</button>
+          <button id="cbCloseBtn">閉じる（Close）</button>
         </div>
       </div>
     `;
@@ -858,11 +945,11 @@
         try {
           if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(area.value);
-            toast("記憶をコピーしました");
+            toast("Copied");
           } else {
             area.focus();
             area.select();
-            openNotice("コピー", "自動コピー非対応です。\n選択された状態なので手動でコピーしてください。");
+            openNotice("Copy", "Auto-copy is not supported.\nPlease copy manually.");
           }
         } catch (e) {
           showError("copy", e);
@@ -905,10 +992,10 @@
     modal.className = "modal-backdrop";
     modal.innerHTML = `
       <div class="modal">
-        <div class="modal-title">ムゾクセイ？</div>
+        <div class="modal-title">Neutral?</div>
         <div class="modal-actions" style="margin-top:12px;">
-          <button id="cfYesBtn">はい</button>
-          <button id="cfNoBtn" class="ghost">いいえ</button>
+          <button id="cfYesBtn">Yes</button>
+          <button id="cfNoBtn" class="ghost">No</button>
         </div>
       </div>
     `;
@@ -977,9 +1064,7 @@
   function resetToNeutralEnvApplied() {
     envApplied = { temp: 0, hum: 50, light: 50 };
     secondsAccum = 0;
-
     lastRankKey = null;
-    lastEnvAttr = null;
 
     updateGrowthPreviewAndTimer();
     renderByCurrentEnv(0);
@@ -1011,9 +1096,9 @@
     FX.superAcc = 0;
     FX.bestAcc = 0;
     FX.goodAcc = 0;
+    FX.badAcc = 0;
 
     lastRankKey = null;
-    lastEnvAttr = null;
 
     setHeader();
     refreshStatsUI();
@@ -1050,7 +1135,7 @@
     newSoulBtn.addEventListener("click", () => {
       try {
         const saga = safeText(sagaInput.value);
-        if (!saga) return openNotice("入力", "サーガ名を入力してください");
+        if (!saga) return openNotice("Input", "Enter SagaName");
         soul = window.TSP_STATE.newSoulWindragon(saga);
         pipelineAfterReborn();
       } catch (e) {
@@ -1061,10 +1146,14 @@
     textRebornBtn.addEventListener("click", () => {
       try {
         const saga = safeText(sagaInput.value);
-        if (!saga) return openNotice("入力", "サーガ名を入力してください");
+        if (!saga) return openNotice("Input", "Enter SagaName");
 
         const code = safeText(soulTextInput.value);
-        if (!code) return openNotice("記憶", "記憶が空です");
+        if (!code) return openNotice(
+  "記憶が空です",
+  "Memory Empty"
+);
+
 
         const parsed = window.TSP_STATE.parseSoulCode(code);
         window.TSP_STATE.assertSagaMatch(parsed, saga);
@@ -1088,7 +1177,7 @@
           openConfirmModal(() => {
             resetToNeutralEnvApplied();
             resetToNeutralEnvDraft();
-            toast("無属性環境に戻しました");
+            toast("Neutral");
           });
         } catch (e) {
           showError("homeNeutralBtn", e);
@@ -1101,7 +1190,7 @@
         if (!soul) return;
         soul.nickname = safeText(nicknameInput.value);
         setHeader();
-        toast("ニックネームを更新しました");
+        toast("Updated");
       } catch (e) {
         showError("nicknameApply", e);
       }
@@ -1121,7 +1210,7 @@
     neutralBtn.addEventListener("click", () => {
       try {
         resetToNeutralEnvDraft();
-        toast("ドラフトを無属性に戻しました");
+        toast("Reset");
       } catch (e) { showError("neutralBtn", e); }
     });
 
@@ -1143,10 +1232,8 @@
       try {
         await playAdventureAndApply();
         lastRankKey = null;
-        lastEnvAttr = null;
       } catch (e) {
         lockUI(false);
-        hideAdventureOverlay();
         showError("applyEnvBtn", e);
       }
     });
@@ -1160,8 +1247,8 @@
     booted = true;
 
     try {
-      if (!window.TSP_STATE) throw new Error("TSP_STATEがありません（state.js未読込）");
-      if (!window.TSP_GAME) throw new Error("TSP_GAMEがありません（game.js未読込）");
+      if (!window.TSP_STATE) throw new Error("TSP_STATE missing (state.js)");
+      if (!window.TSP_GAME) throw new Error("TSP_GAME missing (game.js)");
 
       startView = must("startView");
       mainView = must("mainView");
@@ -1248,6 +1335,8 @@
 
       renderSkillsUI();
       bindSkillsClickOnce();
+
+      setGrowthTimerNeutral();
 
       bindEvents();
       requestAnimationFrame(rafLoop);

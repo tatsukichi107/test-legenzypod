@@ -1,13 +1,17 @@
 // FILE: js/game.js
 /* =========================================================
-   TalisPod v0.79-prep
+   TalisPod v0.79
    game.js（module不使用）
    エリアID（TSP_AREA）ベースで
-   - 環境属性（volcano/tornado/earthquake/storm/neutral）
+   - 環境属性
    - 相性ランク（超ベスト/ベスト/良好/普通/最悪/無属性）
    - 育成（回復→成長→ダメージ）
    - 1分予告
    を提供する統合ロジック
+
+   ★v0.79 追加（英語併記UIのため）
+   - areaName（日本語）/ areaEnName（英語）を computeRank に含める
+   - envAttr の英語表示名（Volcano/Tornado/Earthquake/Storm）を返せるようにする（ATTR_META.jp/en）
 
    公開：
    window.TSP_GAME
@@ -28,19 +32,18 @@
     return;
   }
 
-  const ATTR_UP = AM.ATTRIBUTES; // VOLCANO / TORNADO / EARTHQUAKE / STORM
+  const ATTRIBUTES = AM.ATTRIBUTES;
   const AREAS = AM.AREAS;
 
   /* =========================================================
      ステップ値（スライダーはインデックスで選ぶ）
-     ★ -297 を撤去し、-273 は一番左へ
+     - 温度： -273 は「いちばん左」に置く（UI要望）
      ========================================================= */
   const TEMP_STEPS = [
     -273,
     -45, -40, -35,
     -30, -25, -20, -15, -10, -5,
-    0,
-    5, 10, 15, 20, 25, 30, 35, 40, 45,
+    0, 5, 10, 15, 20, 25, 30, 35, 40, 45,
     999
   ];
 
@@ -50,36 +53,14 @@
   ];
 
   /* =========================================================
-     属性キー（app.js 互換：小文字）
-     ========================================================= */
-  const Attr = Object.freeze({
-    neutral: "neutral",
-    volcano: "volcano",
-    tornado: "tornado",
-    earthquake: "earthquake",
-    storm: "storm"
-  });
-
-  function areaAttrToKey(areaAttrUpper) {
-    switch (areaAttrUpper) {
-      case ATTR_UP.VOLCANO: return Attr.volcano;
-      case ATTR_UP.TORNADO: return Attr.tornado;
-      case ATTR_UP.EARTHQUAKE: return Attr.earthquake;
-      case ATTR_UP.STORM: return Attr.storm;
-      default: return Attr.neutral;
-    }
-  }
-
-  /* =========================================================
-     表示用メタ
-     - key: 育成に使う成長キー（state.js の growStats と一致）
+     属性メタ（表示用）
      ========================================================= */
   const ATTR_META = {
-    [Attr.volcano]:   { jp: "ヴォルケーノ", key: "fire" },
-    [Attr.tornado]:   { jp: "トルネード",   key: "wind" },
-    [Attr.earthquake]:{ jp: "アースクエイク", key: "earth" },
-    [Attr.storm]:     { jp: "ストーム",     key: "water" },
-    [Attr.neutral]:   { jp: "無属性",       key: null }
+    [ATTRIBUTES.VOLCANO]: { jp: "ヴォルケーノ", en: "Volcano", key: "fire" },
+    [ATTRIBUTES.TORNADO]: { jp: "トルネード",   en: "Tornado", key: "wind" },
+    [ATTRIBUTES.EARTHQUAKE]: { jp: "アースクエイク", en: "Earthquake", key: "earth" },
+    [ATTRIBUTES.STORM]: { jp: "ストーム",     en: "Storm", key: "water" },
+    neutral: { jp: "無属性", en: "Neutral", key: null }
   };
 
   /* =========================================================
@@ -95,11 +76,7 @@
   });
 
   /* =========================================================
-     光量適正（陸上のみ足切り）
-     - 無属性と水中は無視
-     - 6:00〜9:59 => 50
-     - 10:00〜15:59 => 100
-     - 16:00〜5:59 => 0
+     ルール：光適正（陸上のみ足切り）
      ========================================================= */
   function expectedLightByTime(dateObj) {
     const h = dateObj.getHours();
@@ -109,21 +86,39 @@
   }
 
   /* =========================================================
-     envAttribute(temp, hum, lightOrDepth)
-     -> "neutral" | "volcano" | "tornado" | "earthquake" | "storm"
+     エリア属性：env(temp,hum,light) -> ATTRIBUTES or "neutral"
      ========================================================= */
   function envAttribute(temp, hum, lightOrDepth) {
     const areaId = AR.resolveAreaId(temp, hum, lightOrDepth);
-    if (areaId === "NEUTRAL") return Attr.neutral;
+    if (areaId === "NEUTRAL") return "neutral";
     const area = AREAS[areaId];
-    if (!area) return Attr.neutral;
-    return areaAttrToKey(area.attribute);
+    return area ? area.attribute : "neutral";
   }
 
   /* =========================================================
-     超ベスト / ベスト
+     モンスター属性相性（4属性）
+     - 同属性 => good
+     - 苦手 => bad（mon.weakAttribute があれば最優先）
+     - 残り => normal
+     ========================================================= */
+  function relationRank(monAttr, envAttr, mon) {
+    if (!envAttr || envAttr === "neutral") return Rank.neutral;
+
+    const weak = mon && mon.weakAttribute;
+    if (weak && envAttr === weak) return Rank.bad;
+
+    if (monAttr && envAttr === monAttr) return Rank.good;
+
+    return Rank.normal;
+  }
+
+  /* =========================================================
+     ベスト/超ベスト判定（優先）
      - 超ベスト：温度・湿度（＋水中なら水深）が完全一致
-     - ベスト：bestAreaId があればそれ、無ければ superBest のエリアを best とみなす
+     - ベスト：エリア一致（mon.bestAreaId があれば）
+       ない場合のフォールバック：
+       superBest の (temp,hum,waterDepth) から決まるエリアIDを best とみなす
+       ※ただし超ベストには届かない条件（temp/humがズレてる等）でのみ効く
      ========================================================= */
   function isSuperBest(mon, env) {
     if (!mon || !mon.superBest) return false;
@@ -145,53 +140,18 @@
     const sb = mon.superBest;
     const t = Number(sb.temp);
     const h = Number(sb.hum);
-    const l = (Number(sb.hum) === 100) ? Number(sb.waterDepth) : 50; // 陸上は便宜上 50（ここはbest判定用なのでOK）
-    return AR.resolveAreaId(t, h, l);
+    const l = (Number(sb.hum) === 100) ? Number(sb.waterDepth) : 50; // 陸上は光50扱いで解決
+    const id = AR.resolveAreaId(t, h, l);
+    return (id && id !== "NEUTRAL") ? id : null;
   }
 
   function isBest(mon, areaId) {
     if (!mon) return false;
-    const bestId = mon.bestAreaId ? String(mon.bestAreaId) : null;
-    if (bestId) return String(areaId) === bestId;
+
+    if (mon.bestAreaId) return String(mon.bestAreaId) === String(areaId);
 
     const fb = bestAreaIdFallback(mon);
-    if (!fb || fb === "NEUTRAL") return false;
-    return String(areaId) === String(fb);
-  }
-
-  /* =========================================================
-     属性相性（陸上・水中共通） ※水中は「水属性扱い」(envAttr=storm)
-     優先：
-     - 同属性 => good
-     - 逆属性 => bad（風↔土、火↔水）
-     - 隣接属性 => normal
-     - neutral => neutral
-     ========================================================= */
-  function oppositeAttr(attrKey) {
-    switch (attrKey) {
-      case Attr.volcano: return Attr.storm;
-      case Attr.storm: return Attr.volcano;
-      case Attr.tornado: return Attr.earthquake;
-      case Attr.earthquake: return Attr.tornado;
-      default: return null;
-    }
-  }
-
-  function relationRank(monAttrKey, envAttrKey) {
-    if (!envAttrKey || envAttrKey === Attr.neutral) return Rank.neutral;
-
-    if (!monAttrKey || monAttrKey === Attr.neutral) {
-      // モンスター側が無属性扱いなら、環境は全部normalに寄せる
-      return Rank.normal;
-    }
-
-    if (envAttrKey === monAttrKey) return Rank.good;
-
-    const opp = oppositeAttr(monAttrKey);
-    if (opp && envAttrKey === opp) return Rank.bad;
-
-    // 上記以外は隣接（またはその他）＝普通
-    return Rank.normal;
+    return fb ? (String(fb) === String(areaId)) : false;
   }
 
   /* =========================================================
@@ -200,27 +160,30 @@
      {
        rank,
        areaId,
-       envAttr,     // "volcano" etc
-       areaName,    // "火山" etc（ない時null）
+       envAttr, envAttrJp, envAttrEn,
+       areaName, areaEnName,
        isSea,
        lightExpected,
        lightOk
      }
      ========================================================= */
-  function computeRank(mon, envApplied, now, monAttributeKey) {
+  function computeRank(mon, envApplied, now, monAttribute) {
     const temp = Number(envApplied.temp);
     const hum = Number(envApplied.hum);
     const light = Number(envApplied.light);
 
     const areaId = AR.resolveAreaId(temp, hum, light);
 
-    // 1) 無属性（最優先）
+    // 1) 無属性
     if (areaId === "NEUTRAL") {
       return {
         rank: Rank.neutral,
         areaId,
-        envAttr: Attr.neutral,
+        envAttr: "neutral",
+        envAttrJp: ATTR_META.neutral.jp,
+        envAttrEn: ATTR_META.neutral.en,
         areaName: null,
+        areaEnName: null,
         isSea: false,
         lightExpected: expectedLightByTime(now),
         lightOk: true
@@ -228,130 +191,116 @@
     }
 
     const area = AREAS[areaId] || null;
-    const envAttrKey = area ? areaAttrToKey(area.attribute) : Attr.neutral;
+    const envAttr = area ? area.attribute : "neutral";
     const isSea = AR.isSeaAreaId(areaId);
+
+    const meta = ATTR_META[envAttr] || ATTR_META.neutral;
+    const areaName = area ? (area.name || null) : null;
+    const areaEnName = area ? (area.enName || null) : null;
 
     // 2) 水中（湿度100）：光は水深扱い、足切りなし
     if (isSea) {
       if (isSuperBest(mon, { temp, hum, light })) {
         return {
           rank: Rank.superbest,
-          areaId,
-          envAttr: envAttrKey,
-          areaName: area ? area.name : null,
+          areaId, envAttr,
+          envAttrJp: meta.jp, envAttrEn: meta.en,
+          areaName, areaEnName,
           isSea: true,
-          lightExpected: null,
-          lightOk: true
+          lightExpected: null, lightOk: true
         };
       }
       if (isBest(mon, areaId)) {
         return {
           rank: Rank.best,
-          areaId,
-          envAttr: envAttrKey,
-          areaName: area ? area.name : null,
+          areaId, envAttr,
+          envAttrJp: meta.jp, envAttrEn: meta.en,
+          areaName, areaEnName,
           isSea: true,
-          lightExpected: null,
-          lightOk: true
+          lightExpected: null, lightOk: true
         };
       }
-
-      // 相性（水中は水属性扱い。areaMap側でstormなのでそのまま）
-      const rel = relationRank(monAttributeKey, envAttrKey);
+      const rel = relationRank(monAttribute, envAttr, mon);
       return {
         rank: rel,
-        areaId,
-        envAttr: envAttrKey,
-        areaName: area ? area.name : null,
+        areaId, envAttr,
+        envAttrJp: meta.jp, envAttrEn: meta.en,
+        areaName, areaEnName,
         isSea: true,
-        lightExpected: null,
-        lightOk: true
+        lightExpected: null, lightOk: true
       };
     }
 
-    // 3) 陸上：光足切り（最優先）
+    // 3) 陸上：光足切り
     const need = expectedLightByTime(now);
     const lightOk = (light === need);
     if (!lightOk) {
       return {
         rank: Rank.bad,
-        areaId,
-        envAttr: envAttrKey,
-        areaName: area ? area.name : null,
+        areaId, envAttr,
+        envAttrJp: meta.jp, envAttrEn: meta.en,
+        areaName, areaEnName,
         isSea: false,
-        lightExpected: need,
-        lightOk: false
+        lightExpected: need, lightOk: false
       };
     }
 
-    // 4) 超ベスト/ベスト（光OKのときだけ到達）
+    // 4) 超ベスト/ベスト
     if (isSuperBest(mon, { temp, hum, light })) {
       return {
         rank: Rank.superbest,
-        areaId,
-        envAttr: envAttrKey,
-        areaName: area ? area.name : null,
+        areaId, envAttr,
+        envAttrJp: meta.jp, envAttrEn: meta.en,
+        areaName, areaEnName,
         isSea: false,
-        lightExpected: need,
-        lightOk: true
+        lightExpected: need, lightOk: true
       };
     }
     if (isBest(mon, areaId)) {
       return {
         rank: Rank.best,
-        areaId,
-        envAttr: envAttrKey,
-        areaName: area ? area.name : null,
+        areaId, envAttr,
+        envAttrJp: meta.jp, envAttrEn: meta.en,
+        areaName, areaEnName,
         isSea: false,
-        lightExpected: need,
-        lightOk: true
+        lightExpected: need, lightOk: true
       };
     }
 
-    // 5) 相性（良好/普通/最悪）
-    const rel = relationRank(monAttributeKey, envAttrKey);
+    // 5) 相性
+    const rel = relationRank(monAttribute, envAttr, mon);
     return {
       rank: rel,
-      areaId,
-      envAttr: envAttrKey,
-      areaName: area ? area.name : null,
+      areaId, envAttr,
+      envAttrJp: meta.jp, envAttrEn: meta.en,
+      areaName, areaEnName,
       isSea: false,
-      lightExpected: need,
-      lightOk: true
+      lightExpected: need, lightOk: true
     };
   }
 
   /* =========================================================
-     成長/回復/ダメージ（state.js 互換）
-     - HP成長は soul.growHP
-     - 属性成長は soul.growStats.fire/wind/earth/water
+     成長/回復/ダメージ
      ========================================================= */
   function clamp(n, lo, hi) {
     return Math.max(lo, Math.min(hi, n));
   }
 
-  function safeGrowStats(soul) {
-    soul.growStats = soul.growStats || { fire: 0, wind: 0, earth: 0, water: 0 };
-    if (typeof soul.growHP !== "number") soul.growHP = Number(soul.growHP || 0);
-    return soul;
-  }
-
   function maxHP(soul) {
     const base = Number(soul.baseHP || 0);
-    const grow = Number(soul.growHP || 0);
+    const grow = Number((soul.growStats && soul.growStats.hp) || 0);
     return base + grow;
   }
 
   function capGrowHP(soul) {
-    soul.growHP = clamp(Number(soul.growHP || 0), 0, 5110);
+    soul.growStats.hp = clamp(Number(soul.growStats.hp || 0), 0, 5110);
   }
-
   function capGrowElem(soul, key) {
     soul.growStats[key] = clamp(Number(soul.growStats[key] || 0), 0, 630);
   }
 
-  function envElemKey(envAttrKey) {
-    const meta = ATTR_META[envAttrKey];
+  function envElemKey(envAttr) {
+    const meta = ATTR_META[envAttr];
     return meta ? meta.key : null;
   }
 
@@ -366,15 +315,13 @@
       case Rank.normal:
         return { hpGrow: 10, elemGrow: 10, elemInterval: 3, healCap: 100, hpDmg: 0 };
       case Rank.bad:
-        return { hpGrow: 10, elemGrow: 10, elemInterval: 5, healCap: 0, hpDmg: 10 };
+        return { hpGrow: 0, elemGrow: 10, elemInterval: 5, healCap: 0, hpDmg: 10 };
       default:
         return { hpGrow: 0, elemGrow: 0, elemInterval: 0, healCap: 0, hpDmg: 0 };
     }
   }
 
   function computeMinutePreview(soul, mon, envApplied, now, elemCounter) {
-    safeGrowStats(soul);
-
     const info = computeRank(mon, envApplied, now, soul.attribute);
     if (info.rank === Rank.neutral) {
       return { rank: Rank.neutral, heal: 0, hpDmg: 0, hpGrow: 0, elemKey: null, elemGrow: 0 };
@@ -394,20 +341,21 @@
       if (c >= prof.elemInterval) elemGrow = prof.elemGrow;
     }
 
-    const hpGrowNow = (Number(soul.growHP || 0) >= 5110) ? 0 : prof.hpGrow;
+    const hpGrowNow = (Number(soul.growStats.hp || 0) >= 5110) ? 0 : prof.hpGrow;
     const hpDmg = (info.rank === Rank.bad) ? prof.hpDmg : 0;
 
     return { rank: info.rank, heal, hpDmg, hpGrow: hpGrowNow, elemKey: k, elemGrow };
   }
 
   function applyOneMinute(soul, mon, envApplied, now, elemCounter) {
-    safeGrowStats(soul);
-
     const info = computeRank(mon, envApplied, now, soul.attribute);
     if (info.rank === Rank.neutral) return;
 
     const prof = growthProfile(info.rank);
     const mxBefore = maxHP(soul);
+
+    // 0) growStatsの安全化
+    soul.growStats = soul.growStats || { hp: 0, fire: 0, wind: 0, earth: 0, water: 0 };
 
     // 1) 回復
     if (prof.healCap > 0) {
@@ -419,10 +367,10 @@
 
     // 2) HP成長（増えた分 currentHP も増やす）
     if (prof.hpGrow > 0) {
-      const beforeGrow = Number(soul.growHP || 0);
+      const beforeGrow = Number(soul.growStats.hp || 0);
       if (beforeGrow < 5110) {
         const add = Math.min(prof.hpGrow, 5110 - beforeGrow);
-        soul.growHP = beforeGrow + add;
+        soul.growStats.hp = beforeGrow + add;
 
         const cur = Number(soul.currentHP != null ? soul.currentHP : mxBefore);
         soul.currentHP = cur + add;
@@ -460,7 +408,7 @@
   }
 
   /* =========================================================
-     公開
+     window.TSP_GAME 公開
      ========================================================= */
   window.TSP_GAME = {
     Rank,
